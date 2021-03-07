@@ -1,0 +1,486 @@
+from tkinter import *
+import tkinter.messagebox as tkMessageBox
+import sqlite3
+import tkinter.ttk as ttk
+
+root = Tk()
+root.title("Python: Warehouse Inventory Management System")
+
+width = 1325
+height = 720
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+x = (screen_width/2) - (width/2)
+y = (screen_height/2) - (height/2)
+root.geometry("%dx%d+%d+%d" % (width, height, x, y))
+root.resizable(0, 0)
+root.config(bg="sky blue")
+
+#========================================VARIABLES========================================
+USERNAME = StringVar()
+PASSWORD = StringVar()
+PRODUCT_NAME = StringVar()
+PRODUCT_PRICE = IntVar()
+PRODUCT_QTY = IntVar()
+CUSTOMER_NAME = StringVar()
+CUSTOMER_PHNO = IntVar()
+CUSTOMER_ADDRESS = StringVar()
+ORDER_PROD = StringVar()
+ORDER_QUANT = IntVar()
+ORDER_DATE = IntVar()
+REQUIRED_DATE = IntVar()
+CUST_NAME = StringVar()
+PROD_NAME = StringVar()
+DELIVERY_DATE = IntVar()
+SEARCH = StringVar()
+
+#========================================METHODS==========================================
+
+def Database():
+    global conn, cursor
+    conn = sqlite3.connect("pythontut.db")
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS `admin` (admin_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, username TEXT, password TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS `Sales` (sales_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, Cust_name TEXT, Prod_name TEXT, Delivery_date TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS `Customers` (Customer_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, Customer_name TEXT, Customer_phno TEXT, Customer_address TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS `Order` (Order_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, Order_prod TEXT, Order_quant TEXT, Order_date TEXT, Required_date TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS `product` (product_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, product_name TEXT, product_qty TEXT, product_price TEXT)")
+    cursor.execute("SELECT * FROM `admin` WHERE `username` = 'admin' AND `password` = 'admin'")
+    if cursor.fetchone() is None:
+        cursor.execute("INSERT INTO `admin` (username, password) VALUES('admin', 'admin')")
+        conn.commit()
+
+def Exit():
+    result = tkMessageBox.askquestion('Warehouse Inventory Management System', 'Are you sure you want to exit?', icon="warning")
+    if result == 'yes':
+        root.destroy()
+        exit()
+
+def Exit2():
+    result = tkMessageBox.askquestion('Warehouse Inventory Management System', 'Are you sure you want to exit?', icon="warning")
+    if result == 'yes':
+        Home.destroy()
+        exit()
+
+def ShowLoginForm():
+    global loginform
+    loginform = Toplevel()
+    loginform.title("Warehouse Inventory Management System/Account Login")
+    width = 600
+    height = 500
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    x = (screen_width/2) - (width/2)
+    y = (screen_height/2) - (height/2)
+    loginform.resizable(0, 0)
+    loginform.geometry("%dx%d+%d+%d" % (width, height, x, y))
+    LoginForm()
+    
+    
+def LoginForm():
+    global lbl_result
+    TopLoginForm = Frame(loginform, width=600, height=100, bd=1, relief=SOLID)
+    TopLoginForm.pack(side=TOP, pady=20)
+    lbl_text = Label(TopLoginForm, text="Administrator Login", font=('arial', 18), width=600)
+    lbl_text.pack(fill=X)
+    MidLoginForm = Frame(loginform, width=600)
+    MidLoginForm.pack(side=TOP, pady=50)
+    lbl_username = Label(MidLoginForm, text="Username:", font=('arial', 25), bd=18)
+    lbl_username.grid(row=0)
+    lbl_password = Label(MidLoginForm, text="Password:", font=('arial', 25), bd=18)
+    lbl_password.grid(row=1)
+    lbl_result = Label(MidLoginForm, text="", font=('arial', 18))
+    lbl_result.grid(row=3, columnspan=2)
+    username = Entry(MidLoginForm, textvariable=USERNAME, font=('arial', 25), width=15)
+    username.grid(row=0, column=1)
+    password = Entry(MidLoginForm, textvariable=PASSWORD, font=('arial', 25), width=15, show="*")
+    password.grid(row=1, column=1)
+    btn_login = Button(MidLoginForm, text="Login", font=('arial', 18), width=30, command=Login)
+    btn_login.grid(row=2, columnspan=2, pady=20)
+    btn_login.bind('<Return>', Login)
+    
+def Home():
+    global Home
+    Home = Tk()
+    Home.title("Warehouse Inventory Management System/Home")
+    width = 1325
+    height = 720
+    screen_width = Home.winfo_screenwidth()
+    screen_height = Home.winfo_screenheight()
+    x = (screen_width/2) - (width/2)
+    y = (screen_height/2) - (height/2)
+    Home.geometry("%dx%d+%d+%d" % (width, height, x, y))
+    Home.resizable(0, 0)
+    Title = Frame(Home, bd=1, relief=SOLID)
+    Title.pack(pady=10)
+    lbl_display = Label(Title, text="Warehouse Inventory Management System", font=('arial', 45))
+    lbl_display.pack()
+    menubar = Menu(Home)
+    filemenu = Menu(menubar, tearoff=0)
+    filemenu2 = Menu(menubar, tearoff=0)
+    filemenu3 = Menu(menubar, tearoff=0)
+    filemenu4 = Menu(menubar, tearoff=0)
+    filemenu5 = Menu(menubar, tearoff=0)
+    filemenu.add_command(label="Logout", command=Logout)
+    filemenu.add_command(label="Exit", command=Exit2)
+    filemenu2.add_command(label="Add new", command=ShowAddNew)
+    filemenu2.add_command(label="View", command=ShowView)
+    filemenu3.add_command(label="Add Customer", command=ShowAddCustomer)
+    filemenu4.add_command(label="Add Order", command=ShowAddOrder)
+    filemenu5.add_command(label="Add sales", command=ShowAddSales)
+    menubar.add_cascade(label="Account", menu=filemenu)
+    menubar.add_cascade(label="Inventory", menu=filemenu2)
+    menubar.add_cascade(label="Customer", menu=filemenu3)
+    menubar.add_cascade(label="Order", menu=filemenu4)
+    menubar.add_cascade(label="Sales", menu=filemenu5)
+    Home.config(menu=menubar)
+    Home.config(bg="#99ff99")
+
+def ShowAddSales():
+    global addnewSales
+    addnewSales = Toplevel()
+    addnewSales.title("Warehouse Inventory Management System/Add new")
+    width = 600
+    height = 500
+    screen_width = Home.winfo_screenwidth()
+    screen_height = Home.winfo_screenheight()
+    x = (screen_width/2) - (width/2)
+    y = (screen_height/2) - (height/2)
+    addnewSales.geometry("%dx%d+%d+%d" % (width, height, x, y))
+    addnewSales.resizable(0, 0)
+    AddNewSales()
+
+def AddNewSales():
+    TopAddNew = Frame(addnewSales, width=600, height=100, bd=1, relief=SOLID)
+    TopAddNew.pack(side=TOP, pady=20)
+    lbl_text = Label(TopAddNew, text="Add New Sales", font=('arial', 18), width=600)
+    lbl_text.pack(fill=X)
+    MidAddNew = Frame(addnewSales, width=600)
+    MidAddNew.pack(side=TOP, pady=50)
+    lbl_Custname = Label(MidAddNew, text="Cust Name:", font=('arial', 25), bd=10)
+    lbl_Custname.grid(row=0, sticky=W)
+    lbl_Prodname = Label(MidAddNew, text="Prod Name:", font=('arial', 25), bd=10)
+    lbl_Prodname.grid(row=1, sticky=W)
+    lbl_Deliverydate = Label(MidAddNew, text="Delivery Date:", font=('arial', 25), bd=10)
+    lbl_Deliverydate.grid(row=2, sticky=W)
+    Custname = Entry(MidAddNew, textvariable=CUST_NAME, font=('arial', 25), width=15)
+    Custname.grid(row=0, column=1)
+    Prodname = Entry(MidAddNew, textvariable=PROD_NAME, font=('arial', 25), width=15)
+    Prodname.grid(row=1, column=1)
+    Deliverydate = Entry(MidAddNew, textvariable=DELIVERY_DATE, font=('arial', 25), width=15)
+    Deliverydate.grid(row=2, column=1)
+    btn_add = Button(MidAddNew, text="Save", font=('arial', 18), width=30, bg="#009ACD", command=AddSales)
+    btn_add.grid(row=4, columnspan=2, pady=20)
+
+def AddSales():
+    Database()
+    cursor.execute("INSERT INTO `Sales` (Cust_name, Prod_name, Delivery_date) VALUES(?, ?, ?)", (str(CUST_NAME.get()), str(PROD_NAME.get()), float(DELIVERY_DATE.get())))
+    conn.commit()
+    CUST_NAME.set("")
+    PROD_NAME.set("")
+    DELIVERY_DATE.set("")
+    cursor.close()
+    conn.close()
+
+
+def ShowAddOrder():
+    global addnewOrder
+    addnewOrder = Toplevel()
+    addnewOrder.title("Warehouse Inventory Management System/Add new")
+    width = 600
+    height = 500
+    screen_width = Home.winfo_screenwidth()
+    screen_height = Home.winfo_screenheight()
+    x = (screen_width/2) - (width/2)
+    y = (screen_height/2) - (height/2)
+    addnewOrder.geometry("%dx%d+%d+%d" % (width, height, x, y))
+    addnewOrder.resizable(0, 0)
+    AddNewOrder()
+
+
+def AddNewOrder():
+    TopAddNew = Frame(addnewOrder, width=600, height=100, bd=1, relief=SOLID)
+    TopAddNew.pack(side=TOP, pady=20)
+    lbl_text = Label(TopAddNew, text="Add New Order", font=('arial', 18), width=600)
+    lbl_text.pack(fill=X)
+    MidAddNew = Frame(addnewOrder, width=600)
+    MidAddNew.pack(side=TOP, pady=50)
+    lbl_Orderprod = Label(MidAddNew, text="Order Product:", font=('arial', 25), bd=10)
+    lbl_Orderprod.grid(row=0, sticky=W)
+    lbl_Orderquant = Label(MidAddNew, text="Order Quantity:", font=('arial', 25), bd=10)
+    lbl_Orderquant.grid(row=1, sticky=W)
+    lbl_Orderdate = Label(MidAddNew, text="Order Date:", font=('arial', 25), bd=10)
+    lbl_Orderdate.grid(row=2, sticky=W)
+    lbl_Requireddate = Label(MidAddNew, text="Required Date:", font=('arial', 25), bd=10)
+    lbl_Requireddate.grid(row=3, sticky=W)
+    Orderprod = Entry(MidAddNew, textvariable=ORDER_PROD, font=('arial', 25), width=15)
+    Orderprod.grid(row=0, column=1)
+    Orderquant = Entry(MidAddNew, textvariable=ORDER_QUANT, font=('arial', 25), width=15)
+    Orderquant.grid(row=1, column=1)
+    Orderdate = Entry(MidAddNew, textvariable=ORDER_DATE, font=('arial', 25), width=15)
+    Orderdate.grid(row=2, column=1)
+    Requireddate = Entry(MidAddNew, textvariable=REQUIRED_DATE, font=('arial', 25), width=15)
+    Requireddate.grid(row=3, column=1)
+    btn_add = Button(MidAddNew, text="Save", font=('arial', 18), width=30, bg="#009ACD", command=AddOrder)
+    btn_add.grid(row=4, columnspan=2, pady=20)
+
+
+def AddOrder():
+    Database()
+    cursor.execute("INSERT INTO `Order` (Order_prod, Order_quant, Order_date, Required_date) VALUES(?, ?, ?, ?)", (str(ORDER_PROD.get()), int(ORDER_QUANT.get()), float(ORDER_DATE.get()), float(REQUIRED_DATE.get())))
+    conn.commit()
+    ORDER_PROD.set("")
+    ORDER_QUANT.set("")
+    ORDER_DATE.set("")
+    REQUIRED_DATE.set("")
+    cursor.close()
+    conn.close()
+
+
+
+
+def ShowAddCustomer():
+    global addnewCustomer
+    addnewCustomer = Toplevel()
+    addnewCustomer.title("Warehouse Inventory Management System/Add new")
+    width = 600
+    height = 500
+    screen_width = Home.winfo_screenwidth()
+    screen_height = Home.winfo_screenheight()
+    x = (screen_width/2) - (width/2)
+    y = (screen_height/2) - (height/2)
+    addnewCustomer.geometry("%dx%d+%d+%d" % (width, height, x, y))
+    addnewCustomer.resizable(0, 0)
+    AddNewCustomer()
+
+
+def AddNewCustomer():
+    TopAddNew = Frame(addnewCustomer, width=600, height=100, bd=1, relief=SOLID)
+    TopAddNew.pack(side=TOP, pady=20)
+    lbl_text = Label(TopAddNew, text="Add New Customer", font=('arial', 18), width=600)
+    lbl_text.pack(fill=X)
+    MidAddNew = Frame(addnewCustomer, width=600)
+    MidAddNew.pack(side=TOP, pady=50)
+    lbl_Customername = Label(MidAddNew, text="Customer Name:", font=('arial', 25), bd=10)
+    lbl_Customername.grid(row=0, sticky=W)
+    lbl_Customerphno = Label(MidAddNew, text="Customer Phno:", font=('arial', 25), bd=10)
+    lbl_Customerphno.grid(row=1, sticky=W)
+    lbl_CustomerAddress = Label(MidAddNew, text="Customer Address:", font=('arial', 25), bd=10)
+    lbl_CustomerAddress.grid(row=2, sticky=W)
+    Customername = Entry(MidAddNew, textvariable=CUSTOMER_NAME, font=('arial', 25), width=15)
+    Customername.grid(row=0, column=1)
+    Customerphno = Entry(MidAddNew, textvariable=CUSTOMER_PHNO, font=('arial', 25), width=15)
+    Customerphno.grid(row=1, column=1)
+    Customeraddress = Entry(MidAddNew, textvariable=CUSTOMER_ADDRESS, font=('arial', 25), width=15)
+    Customeraddress.grid(row=2, column=1)
+    btn_add = Button(MidAddNew, text="Save", font=('arial', 18), width=30, bg="#009ACD", command=AddCustomer)
+    btn_add.grid(row=3, columnspan=2, pady=20)
+    
+    
+def AddCustomer():
+    Database()
+    cursor.execute("INSERT INTO `Customers` (Customer_name, Customer_phno, Customer_address) VALUES(?, ?, ?)", (str(CUSTOMER_NAME.get()), int(CUSTOMER_PHNO.get()), str(CUSTOMER_ADDRESS.get())))
+    conn.commit()
+    CUSTOMER_NAME.set("")
+    CUSTOMER_PHNO.set("")
+    CUSTOMER_ADDRESS.set("")
+    cursor.close()
+    conn.close()
+
+    
+
+def ShowAddNew():
+    global addnewform
+    addnewform = Toplevel()
+    addnewform.title("Warehouse Inventory Management System/Add new")
+    width = 600
+    height = 500
+    screen_width = Home.winfo_screenwidth()
+    screen_height = Home.winfo_screenheight()
+    x = (screen_width/2) - (width/2)
+    y = (screen_height/2) - (height/2)
+    addnewform.geometry("%dx%d+%d+%d" % (width, height, x, y))
+    addnewform.resizable(0, 0)
+    AddNewForm()
+
+def AddNewForm():
+    TopAddNew = Frame(addnewform, width=600, height=100, bd=1, relief=SOLID)
+    TopAddNew.pack(side=TOP, pady=20)
+    lbl_text = Label(TopAddNew, text="Add New Product", font=('arial', 18), width=600)
+    lbl_text.pack(fill=X)
+    MidAddNew = Frame(addnewform, width=600)
+    MidAddNew.pack(side=TOP, pady=50)
+    lbl_productname = Label(MidAddNew, text="Product Name:", font=('arial', 25), bd=10)
+    lbl_productname.grid(row=0, sticky=W)
+    lbl_qty = Label(MidAddNew, text="Product Quantity:", font=('arial', 25), bd=10)
+    lbl_qty.grid(row=1, sticky=W)
+    lbl_price = Label(MidAddNew, text="Product Price:", font=('arial', 25), bd=10)
+    lbl_price.grid(row=2, sticky=W)
+    productname = Entry(MidAddNew, textvariable=PRODUCT_NAME, font=('arial', 25), width=15)
+    productname.grid(row=0, column=1)
+    productqty = Entry(MidAddNew, textvariable=PRODUCT_QTY, font=('arial', 25), width=15)
+    productqty.grid(row=1, column=1)
+    productprice = Entry(MidAddNew, textvariable=PRODUCT_PRICE, font=('arial', 25), width=15)
+    productprice.grid(row=2, column=1)
+    btn_add = Button(MidAddNew, text="Save", font=('arial', 18), width=30, bg="#009ACD", command=AddNew)
+    btn_add.grid(row=3, columnspan=2, pady=20)
+
+def AddNew():
+    Database()
+    cursor.execute("INSERT INTO `product` (product_name, product_qty, product_price) VALUES(?, ?, ?)", (str(PRODUCT_NAME.get()), int(PRODUCT_QTY.get()), int(PRODUCT_PRICE.get())))
+    conn.commit()
+    PRODUCT_NAME.set("")
+    PRODUCT_PRICE.set("")
+    PRODUCT_QTY.set("")
+    cursor.close()
+    conn.close()
+
+def ViewForm():
+    global tree
+    TopViewForm = Frame(viewform, width=600, bd=1, relief=SOLID)
+    TopViewForm.pack(side=TOP, fill=X)
+    LeftViewForm = Frame(viewform, width=600)
+    LeftViewForm.pack(side=LEFT, fill=Y)
+    MidViewForm = Frame(viewform, width=600)
+    MidViewForm.pack(side=RIGHT)
+    lbl_text = Label(TopViewForm, text="View Products", font=('arial', 18), width=600)
+    lbl_text.pack(fill=X)
+    lbl_txtsearch = Label(LeftViewForm, text="Search", font=('arial', 15))
+    lbl_txtsearch.pack(side=TOP, anchor=W)
+    search = Entry(LeftViewForm, textvariable=SEARCH, font=('arial', 15), width=10)
+    search.pack(side=TOP,  padx=10, fill=X)
+    btn_search = Button(LeftViewForm, text="Search", command=Search)
+    btn_search.pack(side=TOP, padx=10, pady=10, fill=X)
+    btn_reset = Button(LeftViewForm, text="Reset", command=Reset)
+    btn_reset.pack(side=TOP, padx=10, pady=10, fill=X)
+    btn_delete = Button(LeftViewForm, text="Delete", command=Delete)
+    btn_delete.pack(side=TOP, padx=10, pady=10, fill=X)
+    scrollbarx = Scrollbar(MidViewForm, orient=HORIZONTAL)
+    scrollbary = Scrollbar(MidViewForm, orient=VERTICAL)
+    tree = ttk.Treeview(MidViewForm, columns=("ProductID", "Product Name", "Product Qty", "Product Price"), selectmode="extended", height=100, yscrollcommand=scrollbary.set, xscrollcommand=scrollbarx.set)
+    scrollbary.config(command=tree.yview)
+    scrollbary.pack(side=RIGHT, fill=Y)
+    scrollbarx.config(command=tree.xview)
+    scrollbarx.pack(side=BOTTOM, fill=X)
+    tree.heading('ProductID', text="ProductID",anchor=W)
+    tree.heading('Product Name', text="Product Name",anchor=W)
+    tree.heading('Product Qty', text="Product Qty",anchor=W)
+    tree.heading('Product Price', text="Product Price",anchor=W)
+    tree.column('#0', stretch=NO, minwidth=0, width=0)
+    tree.column('#1', stretch=NO, minwidth=0, width=0)
+    tree.column('#2', stretch=NO, minwidth=0, width=200)
+    tree.column('#3', stretch=NO, minwidth=0, width=120)
+    tree.column('#4', stretch=NO, minwidth=0, width=120)
+    tree.pack()
+    DisplayData()
+
+def DisplayData():
+    Database()
+    cursor.execute("SELECT * FROM `product`")
+    fetch = cursor.fetchall()
+    for data in fetch:
+        tree.insert('', 'end', values=(data))
+    cursor.close()
+    conn.close()
+
+def Search():
+    if SEARCH.get() != "":
+        tree.delete(*tree.get_children())
+        Database()
+        cursor.execute("SELECT * FROM `product` WHERE `product_name` LIKE ?", ('%'+str(SEARCH.get())+'%',))
+        fetch = cursor.fetchall()
+        for data in fetch:
+            tree.insert('', 'end', values=(data))
+        cursor.close()
+        conn.close()
+
+def Reset():
+    tree.delete(*tree.get_children())
+    DisplayData()
+    SEARCH.set("")
+
+def Delete():
+    if not tree.selection():
+       print("ERROR")
+    else:
+        result = tkMessageBox.askquestion('Warehouse Inventory Management System', 'Are you sure you want to delete this record?', icon="warning")
+        if result == 'yes':
+            curItem = tree.focus()
+            contents =(tree.item(curItem))
+            selecteditem = contents['values']
+            tree.delete(curItem)
+            Database()
+            cursor.execute("DELETE FROM `product` WHERE `product_id` = %d" % selecteditem[0])
+            conn.commit()
+            cursor.close()
+            conn.close()
+    
+
+def ShowView():
+    global viewform
+    viewform = Toplevel()
+    viewform.title("Warehouse Inventory Management System/View Product")
+    width = 600
+    height = 400
+    screen_width = Home.winfo_screenwidth()
+    screen_height = Home.winfo_screenheight()
+    x = (screen_width/2) - (width/2)
+    y = (screen_height/2) - (height/2)
+    viewform.geometry("%dx%d+%d+%d" % (width, height, x, y))
+    viewform.resizable(0, 0)
+    ViewForm()
+
+def Logout():
+    result = tkMessageBox.askquestion('Warehouse Inventory Management System', 'Are you sure you want to logout?', icon="warning")
+    if result == 'yes': 
+        admin_id = ""
+        root.deiconify()
+        Home.destroy()
+  
+def Login(event=None):
+    global admin_id
+    Database()
+    if USERNAME.get == "" or PASSWORD.get() == "":
+        lbl_result.config(text="Please complete the required field!", fg="red")
+    else:
+        cursor.execute("SELECT * FROM `admin` WHERE `username` = ? AND `password` = ?", (USERNAME.get(), PASSWORD.get()))
+        if cursor.fetchone() is not None:
+            cursor.execute("SELECT * FROM `admin` WHERE `username` = ? AND `password` = ?", (USERNAME.get(), PASSWORD.get()))
+            data = cursor.fetchone()
+            admin_id = data[0]
+            USERNAME.set("")
+            PASSWORD.set("")
+            lbl_result.config(text="")
+            ShowHome()
+        else:
+            lbl_result.config(text="Invalid username or password", fg="red")
+            USERNAME.set("")
+            PASSWORD.set("")
+    cursor.close()
+    conn.close() 
+
+def ShowHome():
+    root.withdraw()
+    Home()
+    loginform.destroy()
+
+
+#========================================MENUBAR WIDGETS==================================
+menubar = Menu(root)
+filemenu = Menu(menubar, tearoff=0)
+filemenu.add_command(label="Account", command=ShowLoginForm)
+filemenu.add_command(label="Exit", command=Exit)
+menubar.add_cascade(label="File", menu=filemenu)
+root.config(menu=menubar)
+
+#========================================FRAME============================================
+Title = Frame(root, bd=1, relief=SOLID)
+Title.pack(pady=10)
+
+#========================================LABEL WIDGET=====================================
+lbl_display = Label(Title, text="Warehouse Inventory Management System", font=('arial', 45))
+lbl_display.pack()
+
+#========================================INITIALIZATION===================================
+if __name__ == '__main__':
+    root.mainloop()
